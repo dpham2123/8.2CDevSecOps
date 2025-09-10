@@ -1,28 +1,112 @@
 pipeline {
   agent any
 
+  environment {
+    RECIPIENTS = 'pduy14266@gmail.com'
+  }
+
   stages {
     stage('Checkout') {
       steps {
         git branch: 'main', url: 'https://github.com/dpham2123/8.2CDevSecOps.git'
       }
+      post {
+        success {
+          emailext(
+            to: "${env.RECIPIENTS}",
+            subject: "CHECKOUT: SUCCESS - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+            body: "<p>Checkout completed.</p><p><a href='${env.BUILD_URL}console'>View log</a></p>",
+            attachLog: true, compressLog: true, mimeType: 'text/html'
+          )
+        }
+        failure {
+          emailext(
+            to: "${env.RECIPIENTS}",
+            subject: "CHECKOUT: FAILURE - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+            body: "<p>Checkout failed.</p><p><a href='${env.BUILD_URL}console'>View log</a></p>",
+            attachLog: true, compressLog: true, mimeType: 'text/html'
+          )
+        }
+      }
     }
 
     stage('Install Dependencies') {
-      steps { bat 'npm ci || npm install' }
+      steps {
+        script {
+          def code = bat(returnStatus: true, script: 'cmd /c npm ci || npm install')
+          env.INSTALL_STATUS = (code == 0 ? 'SUCCESS' : "FAILURE (exit ${code})")
+        }
+      }
+      post {
+        always {
+          emailext(
+            to: "${env.RECIPIENTS}",
+            subject: "INSTALL: ${env.INSTALL_STATUS} - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+            body: "<p>Install status: ${env.INSTALL_STATUS}</p><p><a href='${env.BUILD_URL}console'>View log</a></p>",
+            attachLog: true, compressLog: true, mimeType: 'text/html'
+          )
+        }
+      }
     }
 
     stage('Run Tests') {
-      steps { bat 'npm test || exit /b 0' }
+      steps {
+        script {
+          def code = bat(returnStatus: true, script: 'cmd /c npm test')
+          env.TEST_STATUS = (code == 0 ? 'SUCCESS' : "FAILURE (exit ${code})")
+        }
+      }
+      post {
+        always {
+          emailext(
+            to: "${env.RECIPIENTS}",
+            subject: "TEST: ${env.TEST_STATUS} - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+            body: "<p>Test status: ${env.TEST_STATUS}</p><p><a href='${env.BUILD_URL}console'>View log</a></p>",
+            attachLog: true, compressLog: true, mimeType: 'text/html'
+          )
+        }
+      }
     }
 
     stage('Generate Coverage Report') {
-      steps { bat 'npm run coverage || exit /b 0' }
+      steps {
+        script {
+          def code = bat(returnStatus: true, script: 'cmd /c npm run coverage')
+          env.COVERAGE_STATUS = (code == 0 ? 'SUCCESS' : "FAILURE (exit ${code})")
+        }
+      }
+      post {
+        always {
+          emailext(
+            to: "${env.RECIPIENTS}",
+            subject: "COVERAGE: ${env.COVERAGE_STATUS} - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+            body: "<p>Coverage status: ${env.COVERAGE_STATUS}</p><p><a href='${env.BUILD_URL}console'>View log</a></p>",
+            attachLog: true, compressLog: true, mimeType: 'text/html'
+          )
+        }
+      }
     }
 
     stage('NPM Audit (Security Scan)') {
-      steps { bat 'npm audit --json > audit.json || exit /b 0' }
+      steps {
+        script {
+          def code = bat(returnStatus: true, script: 'cmd /c npm audit --json > audit.json')
+          env.AUDIT_STATUS = (code == 0 ? 'SUCCESS' : "FAILURE (exit ${code})")
+        }
+      }
+      post {
+        always {
+          emailext(
+            to: "${env.RECIPIENTS}",
+            subject: "SECURITY SCAN: ${env.AUDIT_STATUS} - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+            body: "<p>Security scan status: ${env.AUDIT_STATUS}</p><p><a href='${env.BUILD_URL}console'>View log</a></p>",
+            attachmentsPattern: 'audit.json',
+            attachLog: true, compressLog: true, mimeType: 'text/html'
+          )
+        }
+      }
     }
   }
 }
+
 
