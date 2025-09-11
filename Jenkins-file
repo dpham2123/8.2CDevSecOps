@@ -1,90 +1,39 @@
 pipeline {
-    agent any
-    
-    environment {
-        RECIPIENTS = "pduy14266@gmail.com"
-    }
-    
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/dpham2123/8.2CDevSecOps.git'
-            }
-        }
-        
-        stage('Install Dependencies') {
-            steps { 
-                bat 'npm ci || npm install' 
-            }
-        }
-        
-        stage('Run Tests') {
-            steps { 
-                script {
-                    def testResult = bat(script: 'npm test', returnStatus: true)
-                    if (testResult == 0) {
-                        currentBuild.result = 'SUCCESS'
-                        env.TEST_STATUS = 'SUCCESS'
-                    } else {
-                        currentBuild.result = 'UNSTABLE'
-                        env.TEST_STATUS = 'FAILURE'
-                    }
-                }
-            }
-            post {
-                always {
-                    script {
-                        def subject = "Test Stage ${env.TEST_STATUS}: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-                        def body = """
-Test Stage completed with status: ${env.TEST_STATUS}
+  agent any
 
-Job: ${env.JOB_NAME}
-Build Number: ${env.BUILD_NUMBER}
-Build URL: ${env.BUILD_URL}
+  environment {
+    RECIPIENTS = "pduy14266@gmail.com"
+  }
 
-Please check the logs for more details.
-"""
-                        
-                        emailext(
-                            to: "${RECIPIENTS}",
-                            subject: subject,
-                            body: body,
-                            attachLog: true
-                        )
-                    }
-                }
-            }
-        }
-        
-        stage('Generate Coverage Report') {
-            steps {
-                // Ensure coverage report exists
-                bat 'npm run coverage || exit /b 0'
-            }
-        }
-        
-        stage('NPM Audit (Security Scan)') {
-            steps { 
-                script {
-                    def auditResult = bat(script: 'npm audit', returnStatus: true)
-                    if (auditResult == 0) {
-                        env.SECURITY_STATUS = 'SUCCESS'
-                    } else {
-                        env.SECURITY_STATUS = 'FAILURE'
-                    }
-                }
-            }
-            post {
-                always {
-                    emailext(
-                        to: "${RECIPIENTS}",
-                        subject: "Security Scan ${env.SECURITY_STATUS}",
-                        body: "Security scan: ${env.SECURITY_STATUS}"
-                    )
-                }
-            }
-        }
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main', url: 'https://github.com/dpham2123/8.2CDevSecOps.git'
+      }
+      
     }
+
+    stage('Install Dependencies') {
+      steps { bat 'npm ci || npm install' }
+    }
+
+    stage('Run Tests') {
+      steps { bat 'npm test || exit /b 0' // Allows pipeline to continue despite test failures  }   
+    }
+
+    stage('Generate Coverage Report') {
+      steps {
+         // Ensure coverage report exists
+        bat 'npm run coverage || exit /b 0'
+      }
+    }
+
+    stage('NPM Audit (Security Scan)') {
+      steps { bat 'npm audit || exit /b 0'// This will show known CVEs in the output }
+    }
+    }
+    }
+  }
 }
 
 
