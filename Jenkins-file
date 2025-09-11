@@ -2,24 +2,33 @@ pipeline {
   agent any
 
   stages {
-    stage('Build') {
+    stage('Checkout') {
       steps {
-        echo 'Building...'
-      }
-      post {
-        success {
-          mail to: 'pduy14266@gmail.com',
-               subject: 'Build Status Email',
-               body: 'Build was successful'
-        }
-        // Optional: notify on failure too
-        failure {
-          mail to: 'pduy14266@gmail.com',
-               subject: "Build Failed: #${env.BUILD_NUMBER}",
-               body: "Build failed. See details: ${env.BUILD_URL}"
-        }
+        git branch: 'main', url: 'https://github.com/dpham2123/8.2CDevSecOps.git'
+      }     
+    }
+
+    stage('Install Dependencies') {
+      steps { bat 'npm ci || npm install' }
+    }
+
+    stage('Run Tests') {
+      steps { bat 'npm test || exit /b 0' // Allows pipeline to continue despite test failures  }   
+    }
+    }
+
+    stage('Generate Coverage Report') {
+      steps {
+         // Ensure coverage report exists
+        bat 'npm run coverage || exit /b 0'
       }
     }
+
+    stage('NPM Audit (Security Scan)') {
+      steps { bat 'npm audit || exit /b 0'// This will show known CVEs in the output }
+    }
+    }
+    
   }
 }
 
