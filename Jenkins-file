@@ -16,8 +16,14 @@ pipeline {
 
     stage('Run Tests') {
       steps {
-        // Continues even if tests fail
-        bat 'npm test || exit /b 0'
+        // Option A (your current behavior: always succeed)
+        // bat 'npm test || exit /b 0'
+
+        // Option B (continue but reflect failures as UNSTABLE so post can react)
+        script {
+          def code = bat(returnStatus: true, script: 'npm test')
+          if (code != 0) { currentBuild.result = 'UNSTABLE' }
+        }
       }
       post {
         success {
@@ -25,10 +31,10 @@ pipeline {
                subject: "Test ✔ Build #${env.BUILD_NUMBER}",
                body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: SUCCESS"
         }
-        failure {
+        unsuccessful { // covers FAILURE and UNSTABLE
           mail to: 'pduy14266@gmail.com',
-               subject: "Run Test ✖ Build #${env.BUILD_NUMBER}",
-               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: FAILURE"
+               subject: "Test ✖ Build #${env.BUILD_NUMBER}",
+               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: ${currentBuild.currentResult}"
         }
       }
     }
@@ -41,7 +47,12 @@ pipeline {
 
     stage('NPM Audit (Security Scan)') {
       steps {
-        bat 'npm audit || exit /b 0' // show CVEs without failing build
+        // Same pattern as tests if you want UNSTABLE on findings:
+        // script {
+        //   def code = bat(returnStatus: true, script: 'npm audit')
+        //   if (code != 0) { currentBuild.result = 'UNSTABLE' }
+        // }
+        bat 'npm audit || exit /b 0'
       }
       post {
         success {
@@ -49,33 +60,36 @@ pipeline {
                subject: "Security Scan ✔ Build #${env.BUILD_NUMBER}",
                body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: SUCCESS"
         }
-        failure {
+        unsuccessful {
           mail to: 'pduy14266@gmail.com',
                subject: "Security Scan ✖ Build #${env.BUILD_NUMBER}",
-               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: FAILURE"
+               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: ${currentBuild.currentResult}"
         }
       }
     }
 
     stage('Complete') {
-            steps {
-                echo "Completed..."
-            }
-        }
-        post {
-        success {
-          mail to: 'pduy14266@gmail.com',
-               subject: "Complete Stage ✔ Build #${env.BUILD_NUMBER}",
-               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: SUCCESS"
-        }
-        failure {
-          mail to: 'pduy14266@gmail.com',
-               subject: "Complete Stage ✖ Build #${env.BUILD_NUMBER}",
-               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: FAILURE"
-        }
+      steps {
+        echo "Completed..."
+      }
     }
+  }
+
+  // Pipeline-level notifications (runs after all stages)
+  post {
+    success {
+      mail to: 'pduy14266@gmail.com',
+           subject: "Pipeline ✔ Build #${env.BUILD_NUMBER}",
+           body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStatus: SUCCESS"
     }
+    failure {
+      mail to: 'pduy14266@gmail.com',
+           subject: "Pipeline ✖ Build #${env.BUILD_NUMBER}",
+           body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStatus: FAILURE"
+    }
+  }
 }
+
 
 
 
