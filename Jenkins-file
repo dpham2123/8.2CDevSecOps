@@ -5,32 +5,60 @@ pipeline {
     stage('Checkout') {
       steps {
         git branch: 'main', url: 'https://github.com/dpham2123/8.2CDevSecOps.git'
-      }     
+      }
     }
 
     stage('Install Dependencies') {
-      steps { bat 'npm ci || npm install' }
+      steps {
+        bat 'npm ci || npm install'
+      }
     }
 
     stage('Run Tests') {
-      steps { bat 'npm test || exit /b 0' // Allows pipeline to continue despite test failures  }   
-    }
+      steps {
+        // Continues even if tests fail
+        bat 'npm test || exit /b 0'
+      }
+      post {
+        success {
+          mail to: 'pduy14266@gmail.com',
+               subject: "Run Test ✔ Build #${env.BUILD_NUMBER}",
+               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: SUCCESS"
+        }
+        failure {
+          mail to: 'pduy14266@gmail.com',
+               subject: "Run Test ✖ Build #${env.BUILD_NUMBER}",
+               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: FAILURE"
+        }
+      }
     }
 
     stage('Generate Coverage Report') {
       steps {
-         // Ensure coverage report exists
         bat 'npm run coverage || exit /b 0'
       }
     }
 
     stage('NPM Audit (Security Scan)') {
-      steps { bat 'npm audit || exit /b 0'// This will show known CVEs in the output }
+      steps {
+        bat 'npm audit || exit /b 0' // show CVEs without failing build
+      }
+      post {
+        success {
+          mail to: 'pduy14266@gmail.com',
+               subject: "Security Scan ✔ Build #${env.BUILD_NUMBER}",
+               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: SUCCESS"
+        }
+        failure {
+          mail to: 'pduy14266@gmail.com',
+               subject: "Security Scan ✖ Build #${env.BUILD_NUMBER}",
+               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: FAILURE"
+        }
+      }
     }
-    }
-    
   }
 }
+
 
 
 
