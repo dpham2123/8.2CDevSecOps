@@ -76,26 +76,11 @@ Please check the logs for more details.
             }
             post {
                 always {
-                    script {
-                        def subject = "Security Scan Stage ${env.SECURITY_STATUS}: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-                        def body = """
-Security Scan Stage completed with status: ${env.SECURITY_STATUS}
-
-Job: ${env.JOB_NAME}
-Build Number: ${env.BUILD_NUMBER}
-Build URL: ${env.BUILD_URL}
-
-This scan shows known CVEs in the dependencies.
-Please check the logs for detailed vulnerability information.
-"""
-                        
-                        emailext(
-                            to: "${RECIPIENTS}",
-                            subject: subject,
-                            body: body,
-                            attachLog: true
-                        )
-                    }
+                    emailext(
+                        to: "${RECIPIENTS}",
+                        subject: "Security Scan ${env.SECURITY_STATUS}",
+                        body: "Security scan: ${env.SECURITY_STATUS}"
+                    )
                 }
             }
         }
