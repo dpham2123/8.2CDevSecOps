@@ -21,16 +21,13 @@ pipeline {
       }
       post {
         always {
-          emailext(
-            to: 'pduy14266@gmail.com',
-            subject: "Test Stage - Build #${env.BUILD_NUMBER}",
-            body: """Job: ${env.JOB_NAME}
+          mail to: 'pduy14266@gmail.com',
+               subject: "Test Stage - Build #${env.BUILD_NUMBER} (${currentBuild.currentResult})",
+               body: """Job: ${env.JOB_NAME}
 Build: ${env.BUILD_URL}
 Stage: ${env.STAGE_NAME}
-Result: ${currentBuild.currentResult}""",
-            attachLog: true,      // attach the console output as the log attachment
-            compressLog: true     // optional: zip the log
-          )
+Console log: ${env.BUILD_URL}console
+Status: ${currentBuild.currentResult}"""
         }
       }
     }
@@ -43,22 +40,49 @@ Result: ${currentBuild.currentResult}""",
 
     stage('NPM Audit (Security Scan)') {
       steps {
-        bat 'npm audit || exit /b 0' // show CVEs without failing build
+        // Shows CVEs without failing the build
+        bat 'npm audit || exit /b 0'
       }
       post {
         always {
-          emailext(
-            to: 'pduy14266@gmail.com',
-            subject: "Security Scan Stage - Build #${env.BUILD_NUMBER}",
-            body: """Job: ${env.JOB_NAME}
+          mail to: 'pduy14266@gmail.com',
+               subject: "Security Scan Stage - Build #${env.BUILD_NUMBER} (${currentBuild.currentResult})",
+               body: """Job: ${env.JOB_NAME}
 Build: ${env.BUILD_URL}
 Stage: ${env.STAGE_NAME}
-Result: ${currentBuild.currentResult}""",
-            attachLog: true,
-            compressLog: true
-          )
+Console log: ${env.BUILD_URL}console
+Status: ${currentBuild.currentResult}"""
         }
       }
+    }
+
+    stage('Complete') {
+      steps {
+        echo 'Completed...'
+      }
+      post {
+        always {
+          mail to: 'pduy14266@gmail.com',
+               subject: "Complete Stage - Build #${env.BUILD_NUMBER} (${currentBuild.currentResult})",
+               body: """Job: ${env.JOB_NAME}
+Build: ${env.BUILD_URL}
+Stage: ${env.STAGE_NAME}
+Console log: ${env.BUILD_URL}console
+Status: ${currentBuild.currentResult}"""
+        }
+      }
+    }
+  }
+
+  // Pipeline-level notification after all stages
+  post {
+    always {
+      mail to: 'pduy14266@gmail.com',
+           subject: "Pipeline - Build #${env.BUILD_NUMBER} (${currentBuild.currentResult})",
+           body: """Job: ${env.JOB_NAME}
+Build: ${env.BUILD_URL}
+Console log: ${env.BUILD_URL}console
+Overall Status: ${currentBuild.currentResult}"""
     }
   }
 }
