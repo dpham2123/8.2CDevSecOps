@@ -1,23 +1,28 @@
 pipeline {
   agent any
-  stage{
-    stage("Build"){
-        steps{
-            echo "Buidling..."
+
+  stages {
+    stage('Build') {
+      steps {
+        echo 'Building...'
+      }
+      post {
+        success {
+          mail to: 'pduy14266@gmail.com',
+               subject: 'Build Status Email',
+               body: 'Build was successful'
         }
-        post{
-            success{
-                mail to: "pduy14266@gmail.com",
-                subject: "Build Status Email",
-                body: "Build was successful"
-            }
+        // Optional: notify on failure too
+        failure {
+          mail to: 'pduy14266@gmail.com',
+               subject: "Build Failed: #${env.BUILD_NUMBER}",
+               body: "Build failed. See details: ${env.BUILD_URL}"
         }
+      }
     }
   }
-
-  
-   
 }
+
 
 
 
