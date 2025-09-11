@@ -1,3 +1,4 @@
+
 pipeline {
   agent any
 
@@ -56,7 +57,25 @@ pipeline {
         }
       }
     }
-  }
+    stage('Complete') {
+      steps {
+        echo "Completed..."
+      }
+    }
+    }
+  // Pipeline-level notifications (runs after all stages)
+  post {
+    success {
+      mail to: 'pduy14266@gmail.com',
+           subject: "Pipeline ✔ Build #${env.BUILD_NUMBER}",
+           body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStatus: SUCCESS"
+    }
+    failure {
+      mail to: 'pduy14266@gmail.com',
+           subject: "Pipeline ✖ Build #${env.BUILD_NUMBER}",
+           body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStatus: FAILURE"
+    }
+    }
 }
 
 
