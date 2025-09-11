@@ -1,69 +1,22 @@
 pipeline {
   agent any
-
-  environment {
-    RECIPIENTS = 'pduy14266@gmail.com'
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        git branch: 'main', url: 'https://github.com/dpham2123/8.2CDevSecOps.git'
-      }
-      post {
-        always { echo 'Checkout stage finished.' }
-      }
-    }
-
-    stage('Install Dependencies') {
-      steps {
-        bat 'npm ci || npm install'
-      }
-      post {
-        always { echo 'Dependencies installed (or attempted).' }
-      }
-    }
-
-    stage('Run Tests') {
-      steps {
-        // Allows pipeline to continue despite test failures
-        bat 'npm test || exit /b 0'
-      }
-      post {
-        always { echo 'Tests stage finished.' }
-      }
-    }
-
-    stage('Generate Coverage Report') {
-      steps {
-        // Ensure coverage report exists
-        bat 'npm run coverage || exit /b 0'
-      }
-      post {
-        always { echo 'Coverage stage finished.' }
-      }
-    }
-
-    stage('NPM Audit (Security Scan)') {
-      steps {
-        // Shows known CVEs; does not fail the build
-        bat 'npm audit || exit /b 0'
-        // If you want to fail on higher-severity issues, use:
-        // bat 'npm audit --audit-level=high'
-      }
-      post {
-        always { echo 'Security scan stage finished.' }
-      }
+  stage{
+    stage("Build"){
+        steps{
+            echo "Buidling..."
+        }
+        post{
+            success{
+                mail to: "pduy14266@gmail.com",
+                subject: "Build Status Email",
+                body: "Build was successful"
+            }
+        }
     }
   }
 
-  post {
-    always {
-      echo "Build completed. (You can email ${env.RECIPIENTS} here if you add emailext.)"
-      // Example (requires Email Extension plugin configured):
-      // emailext to: env.RECIPIENTS, subject: "Build #${env.BUILD_NUMBER} – ${currentBuild.currentResult}", body: "See Jenkins for details."
-    }
-  }
+  
+   
 }
 
 
