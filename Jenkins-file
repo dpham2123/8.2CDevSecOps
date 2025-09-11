@@ -22,7 +22,7 @@ pipeline {
       post {
         success {
           mail to: 'pduy14266@gmail.com',
-               subject: "Run Test ✔ Build #${env.BUILD_NUMBER}",
+               subject: "Test ✔ Build #${env.BUILD_NUMBER}",
                body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: SUCCESS"
         }
         failure {
@@ -56,7 +56,25 @@ pipeline {
         }
       }
     }
-  }
+
+    stage('Complete') {
+            steps {
+                echo "Completed..."
+            }
+        }
+        post {
+        success {
+          mail to: 'pduy14266@gmail.com',
+               subject: "Complete Stage ✔ Build #${env.BUILD_NUMBER}",
+               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: SUCCESS"
+        }
+        failure {
+          mail to: 'pduy14266@gmail.com',
+               subject: "Complete Stage ✖ Build #${env.BUILD_NUMBER}",
+               body: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_URL}\nStage: ${env.STAGE_NAME}\nStatus: FAILURE"
+        }
+    }
+    }
 }
 
 
